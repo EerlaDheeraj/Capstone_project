@@ -126,6 +126,7 @@
 from flask import Flask, render_template, request, redirect, flash, session
 import pymysql
 import os
+job_postings = []
 
 app=Flask(__name__)
 
@@ -136,7 +137,28 @@ cursor = connection.cursor()
 
 @app.route('/')
 def default():
-    return render_template('user-page.html')
+    try:
+        with connection.cursor() as cursor:
+            sql = "SELECT * FROM Admin_Job_Postings"
+            cursor.execute(sql)
+            result = cursor.fetchall()
+            job_postings = [
+                {
+                    'id': row[0],
+                    'job_title': row[1],
+                    'about_job': row[2],
+                    'role_responsibilities': row[3],
+                    'requirements': row[4],
+                    'skills': row[5]
+                }
+                for row in result
+            ]
+    except Exception as e:
+        print(f"Error occurred while retrieving job postings: {e}")
+        job_postings = []
+
+    return render_template('user-page.html', job_postings=job_postings)
+
 
 @app.route('/login')
 def login():
@@ -176,10 +198,43 @@ def add_admin():
         cursor.execute("""INSERT INTO `admin_login` (`email`,`password`) VALUES ('{}','{}')""".format(email, password) )
         connection.commit()
         return redirect('/login')
-
-@app.route('/add-job-postings')
-def add_job_postings():
+    
+@app.route('/add-job-postings', methods=['GET'])
+def add_job_postings_get():
     return render_template('add-job-postings.html')
+
+
+@app.route('/add-job-postings', methods=['POST'])
+def add_job_postings():
+    job_title = request.form.get('job_title')
+    about_job = request.form.get('about_job')
+    role_responsibilities = request.form.get('Role_Responsibilities')
+    requirements = request.form.get('Requirements')
+    skills = request.form.get('Skills')
+
+    job_posting = {
+        'job_title': job_title,
+        'about_job': about_job,
+        'role_responsibilities': role_responsibilities,
+        'requirements': requirements,
+        'skills': skills
+    }
+
+    # Initialize job_postings list
+
+    # job_postings.append(job_posting)
+
+    try:
+        with connection.cursor() as cursor:
+            sql = "INSERT INTO Admin_Job_Postings (job_title, about_job, role_responsibilities, requirements, skills) VALUES (%s, %s, %s, %s, %s)"
+            cursor.execute(sql, (job_title, about_job, role_responsibilities, requirements, skills))
+        connection.commit()
+    except Exception as e:
+        print(f"Error occurred while inserting job posting: {e}")
+
+
+    return redirect('/home')
+
 
 @app.route('/logout')
 def logout():
