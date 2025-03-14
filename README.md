@@ -1,2 +1,2 @@
 # Capstone_project
-Resume Parsing Screening Shortlisting
+Resume Parsing Screening Shortlisting using NLP
